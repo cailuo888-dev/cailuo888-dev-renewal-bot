@@ -4,7 +4,7 @@ import os, sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 import logging
 from datetime import datetime
-from flask import Flask, jsonify
+from flask import Flask, jsonify, send_file
 from apscheduler.schedulers.background import BackgroundScheduler
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -35,6 +35,10 @@ def run_katabump():
 
 @app.route('/')
 def index():
+    return send_file(os.path.join(os.path.dirname(__file__), 'dashboard.html'))
+
+@app.route('/api/status')
+def api_status():
     return jsonify({'service': 'renewal-bot', 'status': 'running', 'results': results})
 
 @app.route('/health')

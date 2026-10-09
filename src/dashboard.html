@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>续期机器人</title>
+<style>
+body { font-family: -apple-system, sans-serif; max-width: 700px; margin: 0 auto; padding: 20px; background: #f5f5f5; }
+.card { background: white; border-radius: 8px; padding: 20px; margin: 15px 0; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+h1 { color: #333; }
+.badge { display: inline-block; padding: 4px 12px; border-radius: 12px; font-size: 13px; font-weight: bold; }
+.ok { background: #d4edda; color: #155724; }
+.fail { background: #f8d7da; color: #721c24; }
+.pending { background: #e2e3e5; color: #383d41; }
+.blocked { background: #fff3cd; color: #856404; }
+.time { color: #888; font-size: 12px; }
+button { padding: 8px 16px; margin: 5px; border: none; border-radius: 6px; background: #007bff; color: white; cursor: pointer; }
+button:hover { background: #0056b3; }
+pre { background: #f8f9fa; padding: 10px; border-radius: 6px; overflow-x: auto; font-size: 12px; }
+</style>
+</head>
+<body>
+<h1>🔄 续期机器人</h1>
+<p class="time">每 5 秒自动刷新 | <a href="/health">健康检查</a></p>
+
+<div class="card">
+<h2>Lunes Host <span class="badge" id="lunes-badge">待运行</span></h2>
+<p>每 10 天自动登录续期（15天到期）</p>
+<p class="time" id="lunes-time">尚未运行</p>
+<pre id="lunes-result">-</pre>
+<button onclick="trigger('lunes')">手动触发</button>
+</div>
+
+<div class="card">
+<h2>Katabump <span class="badge" id="katabump-badge">待运行</span></h2>
+<p>每 3 天自动续期（4天到期）| 服务器 394212</p>
+<p class="time" id="katabump-time">尚未运行</p>
+<pre id="katabump-result">-</pre>
+<button onclick="trigger('katabump')">手动触发</button>
+</div>
+
+<div class="card">
+<h2>⚠️ 已知限制</h2>
+<ul>
+<li>Katabump 的 Cloudflare 人机验证机器过不了，失败时需手动续期</li>
+<li>免费版后台应用 2 天无访问会自动停，需定期打开 dashboard</li>
+</ul>
+</div>
+
+<script>
+function badgeClass(text) {
+  if (!text || text === '-') return 'pending';
+  if (text.startsWith('OK')) return 'ok';
+  if (text.startsWith('BLOCKED')) return 'blocked';
+  if (text.startsWith('FAIL') || text.startsWith('ERROR')) return 'fail';
+  return 'pending';
+}
+async function load() {
+  try {
+    const r = await fetch('/api/status');
+    const d = await r.json();
+    for (const svc of ['lunes', 'katabump']) {
+      const info = d.results[svc];
+      const badge = document.getElementById(svc + '-badge');
+      const time = document.getElementById(svc + '-time');
+      const result = document.getElementById(svc + '-result');
+      if (info) {
+        const txt = info.result || info.error || '-';
+        badge.textContent = txt.split(':')[0];
+        badge.className = 'badge ' + badgeClass(txt);
+        time.textContent = '上次运行: ' + (info.time || '-');
+        result.textContent = txt;
+      }
+    }
+  } catch(e) {}
+}
+async function trigger(svc) {
+  if (!confirm('手动触发 ' + svc + ' 续期？')) return;
+  await fetch('/trigger/' + svc);
+  setTimeout(load, 2000);
+}
+load();
+setInterval(load, 5000);
+</script>
+</body>
+</html>
